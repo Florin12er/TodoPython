@@ -1,13 +1,31 @@
-<!-- hello/templates/hello.html -->
+{% load tailwind_tags %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hello World</title>
+    <title>Todo List</title>
+    {% tailwind_css %}
 </head>
-<body>
-    <h1>Hello, World!</h1>
+<body class="bg-gray-100 min-h-screen p-8">
+    <div class="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-md">
+        <h1 class="text-3xl font-bold mb-6 text-indigo-600">Your Todo List</h1>
+        <ul>
+            {% for todo in todos %}
+                <li class="flex items-center justify-between py-2 border-b">
+                    <span class="{% if todo.completed %}line-through text-gray-500{% endif %}">
+                        {{ todo.task }}
+                    </span>
+                    <input type="checkbox" {% if todo.completed %}checked{% endif %} class="form-checkbox h-5 w-5 text-indigo-600">
+                </li>
+            {% empty %}
+                <li class="text-center text-gray-500">No todos yet. Add one!</li>
+            {% endfor %}
+        </ul>
+        <div class="mt-6 flex justify-between">
+            <a href="{% url 'home' %}" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition duration-300">Back to Home</a>
+            <a href="{% url 'logout' %}" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition duration-300">Logout</a>
+        </div>
+    </div>
 </body>
 </html>
-
