@@ -6,6 +6,8 @@ from django.conf import settings
 from django.shortcuts import redirect, render
 from django.urls import reverse
 
+from todo.models import Todo
+
 oauth = OAuth()
 
 oauth.register(
@@ -21,32 +23,42 @@ oauth.register(
 
 
 def home(request):
-    print(
-        f"Home view accessed. User authenticated: {
-            request.user.is_authenticated}"
+    # Check if the user is authenticated by checking the session
+    if request.session.get("user"):
+        # Redirect authenticated users to the todo page
+        return redirect(reverse("todo"))
+
+    # Render the home page for unauthenticated users
+    return render(
+        request,
+        "home.html",
+        context={
+            "session": request.session.get("user"),
+            "pretty": json.dumps(request.session.get("user"), indent=4),
+        },
     )
-    return render(request, "home.html")
-
-
-# 👆 We're continuing from the steps above. Append this to your webappexample/views.py file.
 
 
 def login(request):
+    # Check if the user is authenticated by checking the session
+    if request.session.get("user"):
+        # Redirect authenticated users to the todo page
+        return redirect(reverse("todo"))
+
+    # Proceed with the login process for unauthenticated users
     return oauth.auth0.authorize_redirect(
         request, request.build_absolute_uri(reverse("callback"))
     )
 
 
-# 👆 We're continuing from the steps above. Append this to your webappexample/views.py file.
-
-
 def callback(request):
     token = oauth.auth0.authorize_access_token(request)
-    request.session["user"] = token
-    return redirect(request.build_absolute_uri(reverse("todo")))
+    userinfo = token.get("userinfo")
 
+    # Store userinfo in the session
+    request.session["user"] = userinfo
 
-# 👆 We're continuing from the steps above. Append this to your webappexample/views.py file.
+    return redirect("todo")
 
 
 def logout(request):
@@ -56,7 +68,7 @@ def logout(request):
         f"https://{settings.AUTH0_DOMAIN}/v2/logout?"
         + urlencode(
             {
-                "returnTo": request.build_absolute_uri(reverse("index")),
+                "returnTo": request.build_absolute_uri(reverse("home")),
                 "client_id": settings.AUTH0_CLIENT_ID,
             },
             quote_via=quote_plus,
@@ -65,4 +77,19 @@ def logout(request):
 
 
 def todo(request):
-    return render(request, "todo.html")
+    # Debugging: Print the session data
+    print("Session user data:", request.session.get("user"))
+
+    user = request.session.get("user")
+    if not user:
+        # If the user is not authenticated, redirect to the login page
+        return redirect("home")
+
+    # Assuming user is a dictionary, get the user ID
+    userId = user.get("id_token", {}).get("sub")
+
+    # Fetch todos for the user
+    todos = Todo.objects.filter(user=userId)
+
+    # Render the todo.html template
+    return render(request, "todo.html", context={"todos": todos})
