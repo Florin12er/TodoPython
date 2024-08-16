@@ -56,7 +56,7 @@ def callback(request):
     userinfo = token.get("userinfo")
 
     # Store userinfo in the session
-    request.session["user"] = userinfo
+    request.session["user"] = json.dumps(userinfo)
 
     return redirect("todo")
 
@@ -77,19 +77,36 @@ def logout(request):
 
 
 def todo(request):
-    # Debugging: Print the session data
-    print("Session user data:", request.session.get("user"))
-
     user = request.session.get("user")
     if not user:
-        # If the user is not authenticated, redirect to the login page
         return redirect("home")
 
-    # Assuming user is a dictionary, get the user ID
-    userId = user.get("id_token", {}).get("sub")
+    # Ensure user is a dictionary
+    if isinstance(user, str):
+        user = json.loads(user)
 
-    # Fetch todos for the user
+    # Get the user ID from the correct location in the user dictionary
+    userId = user.get("sub")  # or user.get("id_token", {}).get("sub")
+
+    if request.method == "POST":
+        task = request.POST.get("task")
+        if task and userId:
+            Todo.objects.create(task=task, user=userId)
+        return redirect("todo")
+
     todos = Todo.objects.filter(user=userId)
-
-    # Render the todo.html template
     return render(request, "todo.html", context={"todos": todos})
+
+
+def toggle_todo(request, todo_id):
+    if request.method == "POST":
+        todo = Todo.objects.get(id=todo_id)
+        todo.completed = not todo.completed
+        todo.save()
+    return redirect("todo")
+
+
+def delete_todo(request, todo_id):
+    if request.method == "POST":
+        Todo.objects.filter(id=todo_id).delete()
+    return redirect("todo")
