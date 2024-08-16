@@ -1,4 +1,5 @@
 {% load tailwind_tags %}
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 
@@ -9,14 +10,14 @@
     {% tailwind_css %}
 </head>
 
-<body class="bg-gray-100 min-h-screen p-8">
+<body class="bg-purple-600 min-h-screen p-8">
     <div class="mt-6 flex justify-end">
         <a href="{% url 'logout' %}"
             class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition duration-300">Logout</a>
     </div>
 
     <div class="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-md">
-        <h1 class="text-3xl font-bold mb-6 text-indigo-600">Your Todo List</h1>
+        <h1 class="text-3xl font-bold mb-6 text-purple-600">Your Todo List</h1>
 
         <!-- Add Todo Form -->
         <form method="POST" action="{% url 'todo' %}" class="mb-6">
@@ -25,7 +26,7 @@
                 <input type="text" name="task" placeholder="Enter a new todo" required
                     class="flex-grow px-4 py-2 border rounded-l focus:outline-none focus:ring-2 focus:ring-indigo-500">
                 <button type="submit"
-                    class="bg-blue-600 text-white px-4 py-2 rounded-r hover:bg-blue-700 transition duration-300">
+                    class="bg-orange-500 text-white px-4 py-2 rounded-r hover:bg-orange-700 transition duration-300">
                     Add Todo
                 </button>
             </div>
@@ -41,16 +42,21 @@
                 <div>
                     <form method="POST" action="{% url 'toggle_todo' todo.id %}" class="inline">
                         {% csrf_token %}
-                        <button type="submit"
-                            class="text-sm bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600 transition duration-300">
-                            {% if todo.completed %}Undo{% else %}Complete{% endif %}
+                        <button type="submit" class="text-sm text-white px-2 py-1 rounded transition duration-300">
+                            {% if todo.completed %}
+                            <img class="w-5 h-5 hover:bg-red-500 rounded-full" src="{% static 'images/undo.svg' %}">
+                            {% else %}
+                            <img class="w-5 h-5 hover:bg-green-500 rounded-full"
+                                src="{% static 'images/check.svg' %}">{% endif %}
                         </button>
                     </form>
                     <form method="POST" action="{% url 'delete_todo' todo.id %}" class="inline ml-2">
                         {% csrf_token %}
                         <button type="submit"
                             class="text-sm bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 transition duration-300">
-                            Delete
+                                <div class="flex gap-2">
+                            Delete<img class="w-5 h-5" src="{% static 'images/trash.svg' %}">
+                                </div>
                         </button>
                     </form>
                 </div>
