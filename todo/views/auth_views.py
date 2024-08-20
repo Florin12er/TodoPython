@@ -43,7 +43,6 @@ def login(request):
         # Redirect authenticated users to the todo page
         return redirect(reverse("todo"))
 
-    # Proceed with the login process for unauthenticated users
     return oauth.auth0.authorize_redirect(
         request, request.build_absolute_uri(reverse("callback"))
     )
