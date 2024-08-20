@@ -6,66 +6,174 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Todo List</title>
+    <title>Todo Lists</title>
     {% tailwind_css %}
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+
+        :root {
+            --primary-color: #8a2be2;
+            --secondary-color: #4b0082;
+            --accent-color: #9370db;
+            --background-color: #f0f8ff;
+            --text-color: #333;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: var(--accent-color);
+            border-radius: 3px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: var(--secondary-color);
+        }
+
+        .hover-scale:hover {
+            transform: scale(1.05);
+            transition: transform 0.3s ease;
+        }
+    </style>
 </head>
 
-<body class="bg-purple-600 min-h-screen p-8">
-    <div class="mt-6 flex justify-end">
-        <a href="{% url 'logout' %}"
-            class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition duration-300">Logout</a>
-    </div>
-
-    <div class="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-md">
-        <h1 class="text-3xl font-bold mb-6 text-purple-600">Your Todo List</h1>
-
-        <!-- Add Todo Form -->
-        <form method="POST" action="{% url 'todo' %}" class="mb-6">
-            {% csrf_token %}
-            <div class="flex">
-                <input type="text" name="task" placeholder="Enter a new todo" required
-                    class="flex-grow px-4 py-2 border rounded-l focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                <button type="submit"
-                    class="bg-orange-500 text-white px-4 py-2 rounded-r hover:bg-orange-700 transition duration-300">
-                    Add Todo
-                </button>
+<body class="min-h-screen">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <div id="sidebar" class="w-64 bg-gradient-to-b from-purple-700 to-purple-900 text-white p-6 flex flex-col">
+            <h2 class="text-2xl font-bold mb-6">Your Lists</h2>
+            <div id="listContainer" class="flex-grow overflow-y-auto custom-scrollbar mb-4">
+                {% for list in lists %}
+                <a href="{% url 'todo' %}?list_id={{ list.id }}"
+                    class="block cursor-pointer hover:bg-purple-600 py-3 px-4 rounded-lg transition duration-300 mb-2 hover-scale {% if current_list.id == list.id %}bg-purple-600{% endif %}">
+                    {{ list.name }}
+                </a>
+                {% empty %}
+                <p>No lists yet. Create one below!</p>
+                {% endfor %}
             </div>
-        </form>
+            <form method="POST" action="{% url 'create_list' %}" class="mt-auto">
+                {% csrf_token %}
+                <div class="relative">
+                    <input type="text" name="list_name" placeholder="New list name" required
+                        class="w-full pl-10 pr-4 py-2 bg-purple-600 text-white placeholder-purple-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400">
+                    <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                </div>
+                <button type="submit"
+                    class="mt-2 w-full bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 transition duration-300 hover-scale">
+                    Create List
+                </button>
+            </form>
+        </div>
 
-        <!-- Todo List -->
-        <ul>
-            {% for todo in todos %}
-            <li class="flex items-center justify-between py-2 border-b">
-                <span class="{% if todo.completed %}line-through text-gray-500{% endif %}">
-                    {{ todo.task }}
-                </span>
-                <div>
-                    <form method="POST" action="{% url 'toggle_todo' todo.id %}" class="inline">
+        <!-- Main content -->
+        <div class="flex-grow p-8 overflow-y-auto custom-scrollbar">
+            <div class="max-w-3xl mx-auto">
+                <div class="flex justify-between items-center mb-8">
+                    <h1 class="text-3xl font-bold text-purple-700">
+                        {% if current_list %}
+                        {{ current_list.name }}
+                        {% else %}
+                        Select a List
+                        {% endif %}
+                    </h1>
+                    <a href="{% url 'logout' %}"
+                        class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition duration-300 hover-scale">
+                        Logout
+                    </a>
+                </div>
+
+                {% if current_list %}
+                <div class="mb-6">
+                    <form method="POST" action="{% url 'rename_list' list_id=current_list.id %}"
+                        class="inline-block mr-2">
                         {% csrf_token %}
-                        <button type="submit" class="text-sm text-white px-2 py-1 rounded transition duration-300">
-                            {% if todo.completed %}
-                            <img class="w-5 h-5 hover:bg-red-500 rounded-full" src="{% static 'images/undo.svg' %}">
-                            {% else %}
-                            <img class="w-5 h-5 hover:bg-green-500 rounded-full"
-                                src="{% static 'images/check.svg' %}">{% endif %}
+                        <input type="text" name="new_name" placeholder="New list name" required
+                            class="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                        <button type="submit"
+                            class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition duration-300 hover-scale">
+                            Rename List
                         </button>
                     </form>
-                    <form method="POST" action="{% url 'delete_todo' todo.id %}" class="inline ml-2">
+                    <form method="POST" action="{% url 'delete_list' list_id=current_list.id %}" class="inline-block">
                         {% csrf_token %}
                         <button type="submit"
-                            class="text-sm bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 transition duration-300">
-                                <div class="flex gap-2">
-                            Delete<img class="w-5 h-5" src="{% static 'images/trash.svg' %}">
-                                </div>
+                            class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition duration-300 hover-scale"
+                            onclick="return confirm('Are you sure you want to delete this list?')">
+                            Delete List
                         </button>
                     </form>
                 </div>
-            </li>
-            {% empty %}
-            <li class="text-center text-gray-500">No todos yet. Add one!</li>
-            {% endfor %}
-        </ul>
 
+                <!-- Add Todo Form -->
+                <form method="POST" action="{% url 'add_todo_to_list' list_id=current_list.id %}" class="mb-8">
+                    {% csrf_token %}
+                    <div class="flex">
+                        <div class="relative flex-grow">
+                            <input type="text" name="task" placeholder="Enter a new todo" required
+                                class="w-full pl-10 pr-4 py-2 border rounded-l-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                            <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                            </svg>
+                        </div>
+                        <button type="submit"
+                            class="bg-purple-500 text-white px-6 py-2 rounded-r-lg hover:bg-purple-600 transition duration-300 hover-scale">
+                            Add Todo
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Todo List -->
+                <ul class="bg-white rounded-lg shadow-md overflow-hidden">
+                    {% for todo in todos %}
+                    <li
+                        class="flex items-center justify-between py-4 px-6 {% if not forloop.last %}border-b{% endif %} hover:bg-gray-50 transition duration-300">
+                        <span class="{% if todo.completed %}line-through text-gray-500{% endif %}">
+                            {{ todo.task }}
+                        </span>
+                        <div class="flex items-center">
+                            <form method="POST" action="{% url 'toggle_todo' todo_id=todo.id %}" class="mr-2">
+                                {% csrf_token %}
+                                <button type="submit" class="text-sm text-white p-1 rounded transition duration-300 hover-scale">
+                                    <img class="w-6 h-6 hover:bg-{% if todo.completed %}yellow{% else %}green{% endif %}-500 rounded-full p-1"
+                                         src="{% if todo.completed %}{% static 'images/undo.svg'%}{% else %}{% static 'images/check.svg' %}{% endif %}"
+                                         alt="Toggle Todo">
+                                </button>
+                            </form>
+                            <form method="POST" action="{% url 'delete_todo' todo_id=todo.id %}">
+                                {% csrf_token %}
+                                <button type="submit"
+                                    class="text-sm bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600 transition duration-300 flex items-center hover-scale"
+                                    onclick="return confirm('Are you sure you want to delete this todo?')">
+                                    Delete
+                                    <img class="w-4 h-4 ml-1" src="{% static 'images/trash.svg' %}">
+                                </button>
+                            </form>
+                        </div>
+                    </li>
+                    {% empty %}
+                    <li class="text-center text-gray-500 py-4">No todos yet. Add one!</li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-center text-gray-500">Select a list or create a new one to get started!</p>
+                {% endif %}
+            </div>
+        </div>
     </div>
 </body>
 
